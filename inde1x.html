@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Accounts Manager</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .form-container {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #666666);
+            margin-bottom: 4px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--tg-theme-button-color, #3390ec);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--tg-theme-button-color, #3390ec);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button.secondary {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            color: var(--tg-theme-text-color, #000000);
+            border: 1px solid var(--tg-theme-button-color, #3390ec);
+        }
+
+        .accounts-list {
+            margin-top: 20px;
+        }
+
+        .account-card {
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .account-card:hover {
+            opacity: 0.8;
+        }
+
+        .account-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .account-preview {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #666666);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 16px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .detail-row {
+            margin-bottom: 16px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #666666);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            padding: 10px;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 8px;
+            word-break: break-all;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tg-theme-hint-color, #666666);
+        }
+
+        .delete-btn {
+            background-color: #ff4444;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎮 Менеджер аккаунтов</h1>
+
+    <div class="form-container">
+        <div class="form-group">
+            <label>1. Пароль от игры</label>
+            <input type="text" id="gamePassword" placeholder="Введите пароль">
+        </div>
+        <div class="form-group">
+            <label>2. Почта от игры</label>
+            <input type="email" id="gameEmail" placeholder="example@mail.com">
+        </div>
+        <div class="form-group">
+            <label>3. Пароль от почты</label>
+            <input type="text" id="emailPassword" placeholder="Введите пароль">
+        </div>
+        <div class="form-group">
+            <label>4. Название лота</label>
+            <input type="text" id="lotName" placeholder="Например: AK-47 | Asiimov">
+        </div>
+        <div class="form-group">
+            <label>5. Цена</label>
+            <input type="text" id="price" placeholder="Например: 5000 руб">
+        </div>
+        <button onclick="saveAccount()">💾 Сохранить</button>
+    </div>
+
+    <h2 style="font-size: 16px; margin-bottom: 12px;">📋 Сохранённые аккаунты</h2>
+    <div id="accountsList" class="accounts-list">
+        <div class="empty-state">Нет сохранённых аккаунтов</div>
+    </div>
+
+    <!-- Modal for viewing account details -->
+    <div id="accountModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Детали аккаунта</div>
+            <div id="modalDetails"></div>
+            <div class="modal-buttons">
+                <button class="secondary" onclick="closeModal()">Закрыть</button>
+                <button class="delete-btn" onclick="deleteCurrentAccount()">🗑️ Удалить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        let accounts = [];
+        let currentAccountId = null;
+
+        // Load accounts from CloudStorage
+        async function loadAccounts() {
+            return new Promise((resolve) => {
+                tg.CloudStorage.getItem('game_accounts', (err, value) => {
+                    if (err || !value) {
+                        accounts = [];
+                    } else {
+                        try {
+                            accounts = JSON.parse(value);
+                        } catch (e) {
+                            accounts = [];
+                        }
+                    }
+                    resolve();
+                });
+            });
+        }
+
+        // Save accounts to CloudStorage
+        async function saveAccountsToStorage() {
+            tg.CloudStorage.setItem('game_accounts', JSON.stringify(accounts), (err) => {
+                if (err) {
+                    tg.showAlert('Ошибка сохранения: ' + err);
+                }
+            });
+        }
+
+        // Render accounts list
+        function renderAccounts() {
+            const container = document.getElementById('accountsList');
+            
+            if (accounts.length === 0) {
+                container.innerHTML = '<div class="empty-state">Нет сохранённых аккаунтов</div>';
+                return;
+            }
+
+            container.innerHTML = accounts.map((acc, index) => `
+                <div class="account-card" onclick="viewAccount(${index})">
+                    <div class="account-title">📦 ${escapeHtml(acc.lotName)}</div>
+                    <div class="account-preview">
+                        💰 ${escapeHtml(acc.price)}<br>
+                        📧 ${escapeHtml(acc.gameEmail)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Save new account
+        async function saveAccount() {
+            const gamePassword = document.getElementById('gamePassword').value.trim();
+            const gameEmail = document.getElementById('gameEmail').value.trim();
+            const emailPassword = document.getElementById('emailPassword').value.trim();
+            const lotName = document.getElementById('lotName').value.trim();
+            const price = document.getElementById('price').value.trim();
+
+            if (!gamePassword || !gameEmail || !emailPassword || !lotName || !price) {
+                tg.showAlert('Пожалуйста, заполните все поля!');
+                return;
+            }
+
+            const newAccount = {
+                id: Date.now(),
+                gamePassword,
+                gameEmail,
+                emailPassword,
+                lotName,
+                price,
+                createdAt: new Date().toISOString()
+            };
+
+            accounts.unshift(newAccount);
+            await saveAccountsToStorage();
+            renderAccounts();
+
+            // Clear form
+            document.getElementById('gamePassword').value = '';
+            document.getElementById('gameEmail').value = '';
+            document.getElementById('emailPassword').value = '';
+            document.getElementById('lotName').value = '';
+            document.getElementById('price').value = '';
+
+            tg.showAlert('✅ Аккаунт сохранён!');
+        }
+
+        // View account details
+        function viewAccount(index) {
+            currentAccountId = index;
+            const acc = accounts[index];
+            
+            const details = `
+                <div class="detail-row">
+                    <div class="detail-label">1. Пароль от игры</div>
+                    <div class="detail-value">${escapeHtml(acc.gamePassword)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">2. Почта от игры</div>
+                    <div class="detail-value">${escapeHtml(acc.gameEmail)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">3. Пароль от почты</div>
+                    <div class="detail-value">${escapeHtml(acc.emailPassword)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">4. Название лота</div>
+                    <div class="detail-value">${escapeHtml(acc.lotName)}</div>
+                </div>
+                <div class="detail-row">
+                    <div class="detail-label">5. Цена</div>
+                    <div class="detail-value">${escapeHtml(acc.price)}</div>
+                </div>
+            `;
+
+            document.getElementById('modalDetails').innerHTML = details;
+            document.getElementById('accountModal').classList.add('active');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('accountModal').classList.remove('active');
+            currentAccountId = null;
+        }
+
+        // Delete account
+        async function deleteCurrentAccount() {
+            if (currentAccountId === null) return;
+
+            tg.showConfirm('Вы уверены, что хотите удалить этот аккаунт?', async (confirmed) => {
+                if (confirmed) {
+                    accounts.splice(currentAccountId, 1);
+                    await saveAccountsToStorage();
+                    renderAccounts();
+                    closeModal();
+                    tg.showAlert('🗑️ Аккаунт удалён');
+                }
+            });
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize
+        (async () => {
+            await loadAccounts();
+            renderAccounts();
+        })();
+    </script>
+</body>
+</html>
